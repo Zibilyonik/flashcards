@@ -8,11 +8,6 @@ import (
 )
 
 func main() {
-	// first part of the project
-	// fmt.Println("Card:")
-	// fmt.Println("Potato.")
-	// fmt.Println("Definition:")
-	// fmt.Println("POTATO")
 	var cardCount int
 	fmt.Println("Input the number of cards:")
 	fmt.Scan(&cardCount)
@@ -27,6 +22,30 @@ func main() {
 		def, _ := defReader.ReadString('\n')
 		term = strings.TrimSpace(term)
 		def = strings.TrimSpace(def)
+		var termExists bool
+		for _, t := range terms {
+			if t == term {
+				fmt.Println("The term already exists. Try again:")
+				termReader := bufio.NewReader(os.Stdin)
+				term, _ = termReader.ReadString('\n')
+				term = strings.TrimSpace(term)
+				i--
+				termExists = true
+			}
+		}
+		for _, d := range definitions {
+			if d == def {
+				fmt.Println("The definition already exists. Try again:")
+				defReader := bufio.NewReader(os.Stdin)
+				def, _ = defReader.ReadString('\n')
+				def = strings.TrimSpace(def)
+				i--
+				termExists = true
+			}
+		}
+		if termExists {
+			continue
+		}
 		terms[i] = term
 		definitions[i] = def
 	}
@@ -41,11 +60,4 @@ func main() {
 			fmt.Printf("Wrong. The right answer is \"%s\" \n", definitions[i])
 		}
 	}
-	//second part of the project
-	// 	if ans == def {
-	// 		fmt.Println("Your answer is right!")
-	// 	} else {
-	// 		fmt.Println("Your answer is wrong...")
-	// 	}
-	// }
 }
