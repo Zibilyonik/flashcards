@@ -7,49 +7,46 @@ import (
 	"strings"
 )
 
-func main() {
-	var cardCount int
-	fmt.Println("Input the number of cards:")
-	fmt.Scan(&cardCount)
+func cardInit(cardCount int) ([]string, []string) {
 	terms := make([]string, cardCount)
 	definitions := make([]string, cardCount)
 	for i := 0; i < cardCount; i++ {
 		fmt.Printf("Input the term for card #%d \n", i+1)
 		termReader := bufio.NewReader(os.Stdin)
-		defReader := bufio.NewReader(os.Stdin)
 		term, _ := termReader.ReadString('\n')
-		fmt.Printf("Input the definition for card #%d \n", i+1)
-		def, _ := defReader.ReadString('\n')
 		term = strings.TrimSpace(term)
-		def = strings.TrimSpace(def)
-		var termExists bool
-		for _, t := range terms {
+		for index, t := range terms {
 			if t == term {
-				fmt.Println("The term already exists. Try again:")
+				fmt.Printf("The term \"%s\" already exists. Try again:\n", t)
 				termReader := bufio.NewReader(os.Stdin)
 				term, _ = termReader.ReadString('\n')
 				term = strings.TrimSpace(term)
-				i--
-				termExists = true
+				index--
+				continue
 			}
 		}
-		for _, d := range definitions {
+		terms[i] = term
+		fmt.Printf("Input the definition for card #%d \n", i+1)
+		defReader := bufio.NewReader(os.Stdin)
+		def, _ := defReader.ReadString('\n')
+		def = strings.TrimSpace(def)
+		for index, d := range definitions {
 			if d == def {
-				fmt.Println("The definition already exists. Try again:")
+				fmt.Printf("The definition \"%s\" already exists. Try again:\n", d)
 				defReader := bufio.NewReader(os.Stdin)
 				def, _ = defReader.ReadString('\n')
 				def = strings.TrimSpace(def)
-				i--
-				termExists = true
+				index--
 			}
 		}
-		if termExists {
-			continue
-		}
-		terms[i] = term
 		definitions[i] = def
 	}
-	for i := 0; i < cardCount; i++ {
+	return terms, definitions
+}
+
+func playGame(terms []string, definitions []string) {
+	for i := 0; i < len(terms); i++ {
+		var wrongDefinition bool
 		fmt.Printf("Print the definition of \"%s\" \n", terms[i])
 		ansReader := bufio.NewReader(os.Stdin)
 		ans, _ := ansReader.ReadString('\n')
@@ -57,7 +54,24 @@ func main() {
 		if ans == definitions[i] {
 			fmt.Println("Correct!")
 		} else {
-			fmt.Printf("Wrong. The right answer is \"%s\" \n", definitions[i])
+			for j := 0; j < len(terms); j++ {
+				if ans == definitions[j] {
+					fmt.Printf("Wrong. The right answer is \"%s\". You've just written the definition of \"%s\" \n", definitions[i], terms[j])
+					wrongDefinition = true
+					break
+				}
+			}
+			if !wrongDefinition {
+				fmt.Printf("Wrong. The right answer is \"%s\" \n", definitions[i])
+			}
 		}
 	}
+}
+
+func main() {
+	var cardCount int
+	fmt.Println("Input the number of cards:")
+	fmt.Scan(&cardCount)
+	terms, definitions := cardInit(cardCount)
+	playGame(terms, definitions)
 }
