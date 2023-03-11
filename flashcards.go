@@ -15,6 +15,7 @@ import (
 type Card struct {
 	Term       string `json:"term"`
 	Definition string `json:"definition"`
+	WrongCount int    `json:"wrongCount"`
 }
 
 func addCard(cards []Card) []Card {
@@ -40,6 +41,7 @@ func addCard(cards []Card) []Card {
 		}
 	}
 	card.Definition = def
+	card.WrongCount = 0
 	appended = append(cards, card)
 	fmt.Printf("The pair (\"%s\": \"%s\") has been added.\n", term, def)
 	return appended
@@ -120,21 +122,67 @@ func playGame(cards []Card) {
 			for j := 0; j < len(cards); j++ {
 				if ans == cards[j].Definition {
 					fmt.Printf("Wrong. The right answer is \"%s\", but your definition is correct for \"%s\" \n", cards[question].Definition, cards[j].Term)
+					cards[question].WrongCount++
 					wrongDefinition = true
 					break
 				}
 			}
 			if !wrongDefinition {
+				cards[question].WrongCount++
 				fmt.Printf("Wrong. The right answer is \"%s\" \n", cards[question].Term)
 			}
 		}
 	}
 }
 
+func logCards() {
+	fmt.Println("File name:")
+	title := readLine()
+	file, err := os.Create(title)
+	if err != nil {
+		log.Fatal(err)
+	}
+	file.WriteString("Card statistics has been reset.")
+	fmt.Println("The log has been saved.")
+}
+
+func hardestCard(cards []Card) {
+	var hardest []Card
+	var max int
+	for i := range cards {
+		if cards[i].WrongCount > max {
+			max = cards[i].WrongCount
+		}
+	}
+	for i := range cards {
+		if cards[i].WrongCount == max {
+			hardest = append(hardest, cards[i])
+		}
+	}
+	if max == 0 {
+		fmt.Println("There are no cards with errors.")
+	} else if len(hardest) == 1 {
+		fmt.Printf("The hardest card is \"%s\". You have %d errors answering it. \n", hardest[0].Term, hardest[0].WrongCount)
+	} else {
+		fmt.Printf("The hardest cards are \"%s\"", hardest[0].Term)
+		for i := 1; i < len(hardest); i++ {
+			fmt.Printf(", \"%s\"", hardest[i].Term)
+		}
+		fmt.Printf(". You have %d errors answering them. \n", hardest[0].WrongCount)
+	}
+}
+
+func resetStats(cards []Card) {
+	for i := range cards {
+		cards[i].WrongCount = 0
+	}
+	fmt.Println("Card statistics has been reset.")
+}
+
 func main() {
 	var cards []Card
 	for {
-		fmt.Println("Input the action (add, remove, import, export, ask, exit):")
+		fmt.Println("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):")
 		action := readLine()
 		switch action {
 		case "add":
@@ -152,6 +200,12 @@ func main() {
 		case "exit":
 			fmt.Println("Bye bye!")
 			return
+		case "log":
+			logCards()
+		case "hardest card":
+			hardestCard(cards)
+		case "reset stats":
+			resetStats(cards)
 		}
 	}
 }
