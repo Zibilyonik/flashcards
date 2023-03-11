@@ -4,140 +4,151 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 )
 
-var terms = new([]string)
-var definitions = new([]string)
-var cards = new([]string)
+type Card struct {
+	Term       string `json:"term"`
+	Definition string `json:"definition"`
+}
 
-func addCard(terms *[]string, definitions *[]string) ([]string, []string) {
+func addCard(cards []Card) []Card {
 	fmt.Println("Input the term:")
-	var term string
-	fmt.Scanln(&term)
-	for index, t := range *terms {
-		if t == term {
-			fmt.Printf("The term \"%s\" already exists. Try again:\n", t)
-			fmt.Scanf("%s", term)
+	var appended []Card
+	var card Card
+	term := readLine()
+	for index := range cards {
+		if cards[index].Term == term {
+			fmt.Printf("The term \"%s\" already exists. Try again:\n", cards[index].Term)
+			term = readLine()
 			index--
 		}
 	}
-	*terms = append(*terms, term)
+	card.Term = term
 	fmt.Println("Input the definition:")
-	var def string
-	fmt.Scanln(&def)
-	for index, d := range *definitions {
-		if d == def {
-			fmt.Printf("The definition \"%s\" already exists. Try again:\n", d)
-			fmt.Scanf("%s", def)
+	def := readLine()
+	for index := range cards {
+		if cards[index].Definition == def {
+			fmt.Printf("The definition \"%s\" already exists. Try again:\n", cards[index].Definition)
+			def = readLine()
 			index--
 		}
 	}
-	*definitions = append(*definitions, def)
-	fmt.Println(*terms, "+", *definitions)
-	return *terms, *definitions
+	card.Definition = def
+	appended = append(cards, card)
+	fmt.Printf("The pair (\"%s\": \"%s\") has been added.\n", term, def)
+	return appended
 }
 
-func removeCard(terms *[]string, definitions *[]string) ([]string, []string) {
+func removeCard(cards []Card) []Card {
 	fmt.Println("Which card?")
-	cardReader := bufio.NewReader(os.Stdin)
-	card, _ := cardReader.ReadString('\n')
-	card = strings.TrimSpace(card)
-	for index, t := range *terms {
-		if t == card {
-			*terms = append((*terms)[:index], (*terms)[index+1:]...)
-			*definitions = append((*definitions)[:index], (*definitions)[index+1:]...)
+	var removed []Card
+	card := readLine()
+	if len(cards) == 0 {
+		fmt.Printf("Can't remove \"%s\": there is no such card.\n", card)
+		return cards
+	}
+	for index := range cards {
+		if cards[index].Term == card {
+			removed = append(cards[:index], cards[index+1:]...)
 			fmt.Println("The card has been removed.")
-			break
-		} else {
-			fmt.Printf("Can't remove \"%s\": there is no such card.\n", card)
-			break
+			return removed
 		}
 	}
-	return *terms, *definitions
+	fmt.Printf("Can't remove \"%s\": there is no such card.\n", card)
+	return cards
 }
 
-func importCards(terms *[]string, definitions *[]string) ([]string, []string) {
+func readLine() string {
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	return strings.TrimSpace(line)
+}
+
+func importCards() []Card {
+	var cards []Card
 	fmt.Println("File name:")
-	fileReader := bufio.NewReader(os.Stdin)
-	file, _ := fileReader.ReadString('\n')
-	file = strings.TrimSpace(file)
-	data, err := os.Open(file)
+	fileName := readLine()
+	file, err := os.Open(fileName)
 	if err != nil {
-		fmt.Println("File not found.")
+		fmt.Println("File not found.", err)
+		return cards
 	}
-	decoder := json.NewDecoder(data)
-	decoder.Decode(&terms)
-	decoder.Decode(&definitions)
-	return *terms, *definitions
+	defer file.Close()
+	cardsJSON, err := ioutil.ReadAll(file)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return cards
+	}
+	json.Unmarshal(cardsJSON, &cards)
+	fmt.Printf("%d cards have been loaded.\n", len(cards))
+	return cards
 }
 
-func exportCards(terms []string, definitions []string) {
-	var title string
-	var cards = new([]string)
+func exportCards(cards []Card) {
 	fmt.Println("File name:")
-	fmt.Scan(&title)
+	title := readLine()
 	file, err := os.Create(title)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for i := range terms {
-		(*cards)[i] = (terms)[i] + "\n" + (definitions)[i]
-		_, err2 := fmt.Fprintln(file, (*cards)[i])
-		if err2 != nil {
-			log.Fatal(err2)
-		}
-	}
-
-	defer file.Close()
-
-	fmt.Printf("%d cards written successfully!", len(*cards))
+	cardsJSON, _ := json.MarshalIndent(cards, "", " ")
+	file.Write(cardsJSON)
+	fmt.Printf("%d cards have been saved", len(cards))
 }
 
-func playGame(terms *[]string, definitions *[]string) {
-	for i := 0; i < len(*terms); i++ {
+func playGame(cards []Card) {
+	fmt.Println("How many times to ask?")
+	ask := readLine()
+	count, err := strconv.Atoi(ask)
+	if err != nil {
+		fmt.Println("Error converting string to int:", err)
+	}
+	for i := 0; i < count; i++ {
 		var wrongDefinition bool
-		fmt.Printf("Print the definition of \"%s\" \n", (*terms)[i])
-		ansReader := bufio.NewReader(os.Stdin)
-		ans, _ := ansReader.ReadString('\n')
-		ans = strings.TrimSpace(ans)
-		if ans == (*definitions)[i] {
+		var question = rand.Intn(len(cards) - 1)
+		fmt.Printf("Print the definition of \"%s\" \n", cards[question].Term)
+		ans := readLine()
+		if ans == cards[question].Definition {
 			fmt.Println("Correct!")
 		} else {
-			for j := 0; j < len(*terms); j++ {
-				if ans == (*definitions)[j] {
-					fmt.Printf("Wrong. The right answer is \"%s\". You've just written the definition of \"%s\" \n", (*definitions)[i], (*terms)[j])
+			for j := 0; j < len(cards); j++ {
+				if ans == cards[j].Definition {
+					fmt.Printf("Wrong. The right answer is \"%s\", but your definition is correct for \"%s\" \n", cards[question].Definition, cards[j].Term)
 					wrongDefinition = true
 					break
 				}
 			}
 			if !wrongDefinition {
-				fmt.Printf("Wrong. The right answer is \"%s\" \n", (*definitions)[i])
+				fmt.Printf("Wrong. The right answer is \"%s\" \n", cards[question].Term)
 			}
 		}
 	}
 }
 
 func main() {
-	var action string
+	var cards []Card
 	for {
 		fmt.Println("Input the action (add, remove, import, export, ask, exit):")
-		fmt.Scanln(&action)
+		action := readLine()
 		switch action {
 		case "add":
-			addCard(terms, definitions)
+			cards = addCard(cards)
 		case "remove":
-			removeCard(terms, definitions)
+			cards = removeCard(cards)
 		case "import":
-			importCards(terms, definitions)
+			cards = importCards()
 		case "export":
-			exportCards(*terms, *definitions)
+			exportCards(cards)
 		case "print":
 			fmt.Println(cards)
 		case "ask":
-			playGame(terms, definitions)
+			playGame(cards)
 		case "exit":
 			fmt.Println("Bye bye!")
 			return
