@@ -222,7 +222,7 @@ func resetStats(cards []Card, logs *[]string) ([]Card, *[]string) {
 	for i := range cards {
 		cards[i].WrongCount = 0
 	}
-	fmt.Println("Card statistics has been reset.")
+	fmt.Println("Card statistics have been reset.")
 	*logs = append(*logs, "Card statistics have been reset.")
 	return cards, logs
 }
