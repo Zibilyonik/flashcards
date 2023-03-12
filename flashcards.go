@@ -15,7 +15,7 @@ import (
 type Card struct {
 	Term       string `json:"term"`
 	Definition string `json:"definition"`
-	WrongCount int    `json:"wrongCount"`
+	WrongCount uint32 `json:"wrongCount"`
 }
 
 func addCard(cards []Card, logs *[]string) ([]Card, *[]string) {
@@ -122,7 +122,7 @@ func exportCards(cards []Card, logs *[]string) *[]string {
 	return logs
 }
 
-func playGame(cards []Card, logs *[]string) *[]string {
+func playGame(cards []Card, logs *[]string) ([]Card, *[]string) {
 	fmt.Println("How many times to ask?")
 	*logs = append(*logs, "How many times to ask?")
 	ask := readLine(logs)
@@ -132,7 +132,7 @@ func playGame(cards []Card, logs *[]string) *[]string {
 		*logs = append(*logs, fmt.Sprintln("Error converting string to int:", err))
 	}
 	for i := 0; i < count; i++ {
-		var wrongDefinition bool
+		var wrongDefinition bool = false
 		var question int = 0
 		if len(cards) == 0 {
 			fmt.Println("There are no cards added.")
@@ -150,24 +150,24 @@ func playGame(cards []Card, logs *[]string) *[]string {
 		if ans == cards[question].Definition {
 			*logs = append(*logs, "Correct!")
 			fmt.Println("Correct!")
+			continue
 		} else {
 			for j := 0; j < len(cards); j++ {
 				if ans == cards[j].Definition {
 					fmt.Printf("Wrong. The right answer is \"%s\", but your definition is correct for \"%s\" \n", cards[question].Definition, cards[j].Term)
 					*logs = append(*logs, fmt.Sprintf("Wrong. The right answer is \"%s\", but your definition is correct for \"%s\" \n", cards[question].Definition, cards[j].Term))
-					cards[question].WrongCount++
 					wrongDefinition = true
 					break
 				}
 			}
 			if !wrongDefinition {
-				cards[question].WrongCount++
 				fmt.Printf("Wrong. The right answer is \"%s\" \n", cards[question].Term)
 				*logs = append(*logs, fmt.Sprintf("Wrong. The right answer is \"%s\" \n", cards[question].Term))
 			}
+			cards[question].WrongCount++
 		}
 	}
-	return logs
+	return cards, logs
 }
 
 func logCards(logs *[]string) *[]string {
@@ -188,7 +188,7 @@ func logCards(logs *[]string) *[]string {
 
 func hardestCard(cards []Card, logs *[]string) *[]string {
 	var hardest []Card
-	var max int
+	var max uint32
 	for i := range cards {
 		if cards[i].WrongCount > max {
 			max = cards[i].WrongCount
@@ -218,13 +218,13 @@ func hardestCard(cards []Card, logs *[]string) *[]string {
 	return logs
 }
 
-func resetStats(cards []Card, logs *[]string) *[]string {
+func resetStats(cards []Card, logs *[]string) ([]Card, *[]string) {
 	for i := range cards {
 		cards[i].WrongCount = 0
 	}
 	fmt.Println("Card statistics has been reset.")
 	*logs = append(*logs, "Card statistics has been reset.")
-	return logs
+	return cards, logs
 }
 
 func main() {
@@ -246,7 +246,7 @@ func main() {
 		case "print":
 			fmt.Println(cards)
 		case "ask":
-			logs = playGame(cards, logs)
+			cards, logs = playGame(cards, logs)
 		case "exit":
 			fmt.Println("Bye bye!")
 			return
@@ -255,7 +255,7 @@ func main() {
 		case "hardest card":
 			logs = hardestCard(cards, logs)
 		case "reset stats":
-			logs = resetStats(cards, logs)
+			cards, logs = resetStats(cards, logs)
 		}
 	}
 }
