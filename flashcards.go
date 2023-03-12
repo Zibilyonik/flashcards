@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"os"
@@ -98,7 +98,7 @@ func importCards(logs *[]string) ([]Card, *[]string) {
 		return cards, logs
 	}
 	defer file.Close()
-	cardsJSON, err := ioutil.ReadAll(file)
+	cardsJSON, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 		return cards, logs
@@ -161,8 +161,8 @@ func playGame(cards []Card, logs *[]string) ([]Card, *[]string) {
 				}
 			}
 			if !wrongDefinition {
-				fmt.Printf("Wrong. The right answer is \"%s\" \n", cards[question].Term)
-				*logs = append(*logs, fmt.Sprintf("Wrong. The right answer is \"%s\" \n", cards[question].Term))
+				fmt.Printf("Wrong. The right answer is \"%s\" \n", cards[question].Definition)
+				*logs = append(*logs, fmt.Sprintf("Wrong. The right answer is \"%s\" \n", cards[question].Definition))
 			}
 			cards[question].WrongCount++
 		}
@@ -181,8 +181,8 @@ func logCards(logs *[]string) *[]string {
 	for i := range *logs {
 		file.WriteString((*logs)[i])
 	}
-	fmt.Println("The log has been saved.")
-	*logs = append(*logs, "The log has been saved.")
+	fmt.Printf("The log has been saved.\n")
+	*logs = append(*logs, fmt.Sprintf("The log has been saved.\n"))
 	return logs
 }
 
@@ -223,7 +223,7 @@ func resetStats(cards []Card, logs *[]string) ([]Card, *[]string) {
 		cards[i].WrongCount = 0
 	}
 	fmt.Println("Card statistics has been reset.")
-	*logs = append(*logs, "Card statistics has been reset.")
+	*logs = append(*logs, "Card statistics have been reset.")
 	return cards, logs
 }
 
