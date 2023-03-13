@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -87,12 +88,9 @@ func logger(logs *[]string, input string) *[]string {
 	return logs
 }
 
-func importCards(logs *[]string) ([]Card, *[]string) {
+func importCards(logs *[]string, title string) ([]Card, *[]string) {
 	var cards []Card
-	fmt.Println("File name:")
-	*logs = append(*logs, "File name:")
-	fileName := readLine(logs)
-	file, err := os.Open(fileName)
+	file, err := os.Open(title)
 	if err != nil {
 		fmt.Println("File not found.", err)
 		return cards, logs
@@ -108,9 +106,7 @@ func importCards(logs *[]string) ([]Card, *[]string) {
 	return cards, logs
 }
 
-func exportCards(cards []Card, logs *[]string) *[]string {
-	fmt.Println("File name:")
-	title := readLine(logs)
+func exportCards(cards []Card, logs *[]string, title string) *[]string {
 	file, err := os.Create(title)
 	if err != nil {
 		log.Fatal(err)
@@ -230,6 +226,12 @@ func resetStats(cards []Card, logs *[]string) ([]Card, *[]string) {
 func main() {
 	var cards []Card
 	var logs = new([]string)
+	export_to := flag.String("export_to", "", "export file")
+	import_from := flag.String("import_from", "", "import file")
+	flag.Parse()
+	if *import_from != "" {
+		cards, logs = importCards(logs, *import_from)
+	}
 	for {
 		fmt.Println("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):")
 		*logs = append(*logs, fmt.Sprintln("Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):"))
@@ -240,14 +242,21 @@ func main() {
 		case "remove":
 			cards, logs = removeCard(cards, logs)
 		case "import":
-			cards, logs = importCards(logs)
+			fmt.Println("File name:")
+			title := readLine(logs)
+			cards, logs = importCards(logs, title)
 		case "export":
-			logs = exportCards(cards, logs)
+			fmt.Println("File name:")
+			title := readLine(logs)
+			logs = exportCards(cards, logs, title)
 		case "print":
 			fmt.Println(cards)
 		case "ask":
 			cards, logs = playGame(cards, logs)
 		case "exit":
+			if *export_to != "" {
+				defer exportCards(cards, logs, *export_to)
+			}
 			fmt.Println("Bye bye!")
 			return
 		case "log":
